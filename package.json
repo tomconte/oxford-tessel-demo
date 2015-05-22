@@ -1,0 +1,14 @@
+{
+  "name": "camerademo",
+  "version": "1.0.0",
+  "description": "Tessel Camera Azure demo",
+  "main": "camera.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Thomas Conté",
+  "license": "ISC",
+  "dependencies": {
+    "camera-vc0706": "^0.1.8"
+  }
+}
