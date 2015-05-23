@@ -3,14 +3,17 @@ var https = require('https');
 
 var gpio = tessel.port['GPIO'];
 
+var notificationLED = tessel.led[1];
+
 /*
 ** Azure Blob Storage parameters
 */
 
 var blob_host = 'tconeu.blob.core.windows.net';
 var blob_container = 'tessel-uploads';
-// Use any tool to generate a Shared Access Key e.g. Azure Management Studio or PowerShell
-var blob_sas = '?sv=2014-02-14&sr=c&sig=okAN%2BZxg%2BQROz2v2f02oKbV7OStrYmhck5CJweKlQV8%3D&se=2019-12-31T23%3A00%3A00Z&sp=rwdl';
+// Use any tool to generate a Shared Access Key e.g. Azure Management Studio, Azure Storage Explorer...
+// or PowerShell: New-AzureStorageContainerSASToken -Name test -Permission rwdl
+var blob_sas = '?sv=2014-02-14&sr=c&sig=xxxx&se=2019-12-31T23%3A00%3A00Z&sp=rwdl';
 
 /*
 ** Project Oxford Face API parameters
@@ -19,7 +22,7 @@ var blob_sas = '?sv=2014-02-14&sr=c&sig=okAN%2BZxg%2BQROz2v2f02oKbV7OStrYmhck5CJ
 // Request gender & age analysis
 var faceapi_request = '/face/v0/detections?analyzesFaceLandmarks=false&analyzesAge=true&analyzesGender=true&analyzesHeadPose=false';
 // Get your key at http://www.projectoxford.ai/
-var oxford_key = 'b9214a347ffa488082a7126967ffe8f0';
+var oxford_key = 'xxxx';
 
 /*
 ** Upload a picture to Azure
@@ -70,11 +73,15 @@ function uploadPicture(name, image)
 */
 
 function takePicture() {
+  // Turn on LED
+  notificationLED.high();
   // Take a picture
   camera.takePicture(function(err, image) {
     if (err) {
       console.log('error taking image', err);
     } else {
+      // Turn off LED
+      notificationLED.low();
       // Name the image
       var name = 'picture-' + Math.floor(Date.now()*1000) + '.jpg';
       // Upload the image
@@ -121,23 +128,25 @@ function faceDetect(url) {
       var face = JSON.parse(d);
       
       if (face.length == 0) {
+
+        // No face detected
         console.log("\nNO FACE DETECTED\n");
-        // Turn off LED
+
+        // Turn off "big" LED
         gpio.pin['G3'].output(false);        
+
       } else {
+
+        // Face was detected
         console.log("\nFACE DETECTED\n");
         console.log(face[0].faceId);
         console.log(face[0].attributes.gender);
         console.log(face[0].attributes.age);        
-        // Turn on LED
+
+        // Turn on "big" LED
         gpio.pin['G3'].output(true);        
+
       }
-      
-      // Schedule next
-      setTimeout(takePicture, 5000);
-      
-      // Send update
-      
     });
   });
 
@@ -156,10 +165,13 @@ function faceDetect(url) {
 var camera = require('camera-vc0706').use(tessel.port['A']);
 
 camera.on('ready', function() {
-  console.log('camera ready');
-  takePicture();
+  console.log('Camera ready!');
 });
 
 camera.on('error', function(err) {
   console.error(err);
+});
+
+tessel.button.on('press', function() {
+  takePicture();
 });
